@@ -1,0 +1,191 @@
+SEAT ALLOCATION - PHASE 1 TEST PLAN
+====================================
+
+Purpose
+-------
+Cover the current requirements for the mini movie/concert seat booking system.
+These are implementation-ready manual/integration test cases. Authentication is
+not required in phase 1.
+
+Test data
+---------
+- Session: SESSION-001
+- Seats: A-01, A-02, A-03, A-04, B-01, B-02
+- Hold duration: 120 seconds
+- Two separate browser sessions: User A and User B
+- A clock or test-time control is available for expiry tests.
+
+1. Display name and session storage
+------------------------------------
+T01 First visit asks for a display name
+Steps: Clear browser sessionStorage; open the app.
+Expected: A display-name prompt appears before or during the booking flow.
+
+T02 Display name is stored for the browser session
+Steps: Enter "Alex" and continue; inspect sessionStorage.
+Expected: key seatAllocation.displayName contains "Alex".
+
+T03 Display name is reused
+Steps: Reload the page in the same browser tab/session.
+Expected: No second prompt; "Alex" is available in the UI/booking summary.
+
+T04 Display name can be edited or cleared
+Steps: Edit the name to "Sam", then clear it.
+Expected: The UI and sessionStorage reflect the change/clear operation.
+
+T05 Display name is not authentication
+Steps: Change the stored name manually or use the same name in User B.
+Expected: The server does not treat the name as proof of ownership.
+
+2. Seat map and UI states
+-------------------------
+T06 Fetch and render the seat map
+Expected: Rows, seat numbers, available seats, and session information render correctly.
+
+T07 Seat state legend is understandable
+Expected: Available, selected, held-by-me, held-by-other/blocked, booked, and blocked states are visually distinct and not differentiated by color alone.
+
+T08 Select seats and see summary
+Steps: Select A-01 and A-02.
+Expected: Selected seats are highlighted; summary shows both seats and count.
+
+T09 Invalid or duplicate seat selection is rejected
+Steps: Submit duplicate seat IDs or an unknown seat ID through the API.
+Expected: Validation error; no partial hold is created.
+
+T10 Contiguous-seat preference
+Steps: Request two seats when A-01/A-02 are available and B-01/B-02 are also available; include a scattered alternative.
+Expected: The suggestion prefers a contiguous pair in the same row/section/price tier. Backend remains authoritative.
+
+3. Hold behavior
+----------------
+T11 Create a hold
+Steps: User A selects A-01 and A-02 and submits a hold.
+Expected: Hold succeeds; response includes hold ID, seat IDs, and expiresAt about 120 seconds in the future.
+
+T12 Hold appears in the map
+Expected: User A sees held-by-me; User B sees held-by-other/blocked.
+
+T13 Show blocked-seat timer
+Steps: User B views A-01 while User A's hold is active.
+Expected: A-01 is blocked and shows a countdown based on server heldUntil/expiresAt. User A's name or identity is not exposed.
+
+T14 Countdown does not trust browser time
+Steps: Change the browser clock or reload with a stale local timer.
+Expected: The server expiry timestamp controls the displayed remaining time and availability.
+
+T15 Explicitly release a hold
+Steps: User A releases the hold.
+Expected: Hold becomes released; seats become available after the authoritative update; User B can select them.
+
+T16 Hold expiry
+Steps: Create a hold, advance time beyond 120 seconds, then fetch/attempt to confirm.
+Expected: Hold is treated as expired even if cleanup has not run; seats become available after refetch/event.
+
+T17 Cannot hold an unavailable seat
+Steps: User B attempts to hold A-01 while User A's hold is active.
+Expected: HTTP 409 with SEAT_UNAVAILABLE and conflicting seat IDs; no partial hold is created.
+
+T18 Same-owner retry is safe
+Steps: Retry the same hold request with the same Idempotency-Key/client token.
+Expected: Same logical hold is returned; duplicate hold rows are not created.
+
+4. Concurrent booking and double-booking protection
+----------------------------------------------------
+T19 Concurrent hold race
+Steps: Send simultaneous hold requests from User A and User B for A-03.
+Expected: Exactly one succeeds; the other receives a conflict; seat has one owner.
+
+T20 Confirm a valid hold
+Steps: User A confirms an active hold before expiry.
+Expected: Booking is created atomically; all held seats become booked; confirmation is shown.
+
+T21 Confirm after expiry
+Steps: Let a hold expire, then confirm it.
+Expected: HTTP 409 HOLD_EXPIRED; no booking is created.
+
+T22 Concurrent confirmation race
+Steps: Send two confirmation requests for the same hold at the same time.
+Expected: One booking is created; the retry returns the same idempotent result or ALREADY_CONFIRMED; no duplicate booking exists.
+
+T23 Booked seat cannot be booked again
+Steps: User B attempts to hold or book a confirmed seat.
+Expected: HTTP 409 conflict; existing booking is unchanged.
+
+T24 Multi-seat atomicity
+Steps: Attempt to hold/book a group where one seat is unavailable.
+Expected: Entire request fails or follows an explicitly documented partial-allocation rule; for phase 1, no partial hold/booking is created.
+
+5. Real-time updates and recovery
+----------------------------------
+T25 Hold update is broadcast
+Expected: Connected clients receive seat.state_changed after hold creation.
+
+T26 Release/expiry/booking updates are broadcast
+Expected: Connected clients receive updates for release, expiry, and booking transitions.
+
+T27 Event ordering/version gap
+Steps: Drop or reorder an event so the client misses a version.
+Expected: Client detects the version gap and refetches the full seat map.
+
+T28 Reconnect recovery
+Steps: Disconnect the real-time connection, change a seat state, then reconnect.
+Expected: Client refetches and displays authoritative current state.
+
+T29 Stale selection is rejected
+Steps: User B selects a seat; User A books it before User B submits.
+Expected: User B's hold fails with a conflict; stale UI is refreshed.
+
+6. API contract and safety checks
+----------------------------------
+T30 Seat availability endpoint
+Expected: GET /api/v1/sessions/{sessionId}/seats returns states, version, and hold duration with UTC timestamps.
+
+T31 Hold endpoint validation
+Expected: POST /holds rejects missing session, empty seat list, duplicate seats, unknown seats, and over-limit seat count with stable error codes.
+
+T32 Confirm endpoint validation
+Expected: Confirm rejects missing/unknown/expired/not-owned holds with documented 404/409 errors.
+
+T33 Idempotency keys
+Steps: Repeat hold and confirm requests after a simulated timeout using the same Idempotency-Key.
+Expected: No duplicate hold or booking is created.
+
+T34 Privacy of held seats
+Expected: API exposes only self/other ownership marker and expiry needed for the UI timer; no other user's identity or contact details are returned.
+
+T35 UTC timestamps
+Expected: API timestamps are ISO-8601 UTC; countdown behavior is consistent across time zones.
+
+7. Accessibility and usability
+------------------------------
+T36 Keyboard seat navigation
+Expected: All seats can be reached and selected with keyboard controls.
+
+T37 Screen-reader labels
+Expected: Seat labels include row, number, state, and remaining hold time where applicable.
+
+T38 Non-color state communication
+Expected: Text, icons, labels, or patterns communicate state in addition to color.
+
+T39 Actionable conflict message
+Expected: When a seat is taken, the user sees a clear message and a refreshed seat map.
+
+8. Observability and regression checks
+---------------------------------------
+T40 Request correlation
+Expected: API responses include requestId and server logs contain the same ID.
+
+T41 Metrics/logs
+Expected: Hold success, hold conflict, expiry, booking success, booking conflict, and real-time reconnects are measurable.
+
+T42 Regression suite
+Expected: All tests above pass for both movie-style rows and an irregular concert-style layout with blocked seats.
+
+Pass criteria
+-------------
+- No double booking under concurrent requests.
+- Expired holds cannot be confirmed.
+- Blocked-seat timers use server expiry and recover after expiry/reconnect.
+- Display name persists only for the browser session and is never used as authentication.
+- All required UI, API, privacy, accessibility, and real-time behaviors pass.

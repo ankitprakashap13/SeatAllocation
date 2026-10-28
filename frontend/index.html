@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f3f5f4" />
+    <meta name="description" content="Choose seats, place a short hold, and confirm your reservation." />
+    <title>Seat Allocation · Reserve your seats</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Seat Allocation home">
+          <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+          <span>seat<span class="brand-light">allocation</span></span>
+        </a>
+        <div class="topbar-right">
+          <div class="connection" id="connection-status" role="status" aria-live="polite">
+            <span class="connection-dot" aria-hidden="true"></span><span id="connection-label">Connecting</span>
+          </div>
+          <nav class="page-navigation" aria-label="Your account pages">
+            <button id="show-seats" class="nav-button active" type="button" aria-current="page">Seats</button>
+            <button id="show-bookings" class="nav-button" type="button">My bookings</button>
+          </nav>
+          <label class="demo-profile-label">Demo profile
+            <select id="demo-profile" aria-label="Choose a demo visitor">
+              <option value="">Current visitor</option>
+              <option value="demo-avery">Avery · 3 seats</option>
+              <option value="demo-blair">Blair · 5 seats</option>
+              <option value="demo-casey">Casey · 7 seats</option>
+            </select>
+          </label>
+          <button class="visitor-button" id="edit-name" type="button" aria-label="Edit visitor name">
+            <span class="avatar" id="visitor-initial">?</span><span id="visitor-label">Add your name</span>
+            <svg aria-hidden="true" viewBox="0 0 16 16"><path d="m5 6 3 3 3-3" /></svg>
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <section id="seats-page">
+        <section class="event-heading" aria-labelledby="page-title">
+          <div class="event-copy">
+            <div class="eyebrow"><span class="eyebrow-line"></span> YOUR NEXT GREAT NIGHT</div>
+            <h1 id="page-title">A seat with<br /><span>your name on it.</span></h1>
+            <p class="intro">Pick your spot. We’ll keep it safe while you get settled.</p>
+          </div>
+          <div class="event-card">
+            <div class="event-art" aria-hidden="true"><div class="art-orbit orbit-one"></div><div class="art-orbit orbit-two"></div><div class="art-sun"></div><div class="art-horizon"></div><span class="art-star star-one">✳</span><span class="art-star star-two">✳</span></div>
+            <div class="event-meta">
+              <span class="event-type"><span class="type-dot"></span> <span id="event-type-label">MOVIE SCREENING</span></span>
+              <h2 id="event-title">Friday Night<br />Screening</h2>
+              <div class="event-details"><span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 17s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10Z"/><circle cx="10" cy="7" r="2"/></svg> <span id="event-venue">Northstar Cinema</span></span><span><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4.5" width="14" height="13" rx="2"/><path d="M6.5 2.5v4M13.5 2.5v4M3 8.5h14"/></svg> <span id="event-starts-at">Session time</span></span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="booking-layout" aria-label="Choose your seats">
+          <div class="map-panel panel">
+            <div class="panel-heading">
+              <div><div class="section-kicker">THE MAIN FLOOR</div><h2>Choose your seats</h2></div>
+              <label class="session-picker">Session <input id="session-id" value="SESSION-001" aria-label="Session ID" spellcheck="false" /></label>
+            </div>
+            <div class="stage-wrap"><div class="stage-glow"></div><div class="stage" aria-label="Stage">S T A G E</div><div class="stage-caption">Your view starts here</div></div>
+            <div class="seat-map-scroll"><div id="seat-map" class="seat-map" role="group" aria-label="Seat map" aria-describedby="map-instructions"><div class="loading-map"><span class="spinner" aria-hidden="true"></span> Finding your seats…</div></div></div>
+            <p class="map-instructions" id="map-instructions">Use arrow keys to move between seats. Press Enter or Space to select an available seat.</p>
+            <div class="seat-legend" aria-label="Seat status legend">
+              <span><i class="legend-swatch available" aria-hidden="true"></i>Available</span>
+              <span><i class="legend-swatch selected" aria-hidden="true"></i>Your pick</span>
+              <span><i class="legend-swatch self-held" aria-hidden="true"></i>Held by you</span>
+              <span><i class="legend-swatch other-held" aria-hidden="true"></i>Held by someone</span>
+              <span><i class="legend-swatch booked-self" aria-hidden="true"></i>Booked by you</span>
+              <span><i class="legend-swatch booked" aria-hidden="true"></i>Booked</span>
+              <span><i class="legend-swatch blocked" aria-hidden="true"></i>Unavailable</span>
+            </div>
+            <div id="held-seat-timers" class="held-seat-timers" aria-live="polite" aria-label="Other active seat holds"></div>
+            <div id="map-message" class="inline-message" role="status" aria-live="polite"></div>
+          </div>
+
+          <aside class="summary-panel panel" aria-labelledby="summary-title">
+            <div class="summary-topline"><span class="step-badge">01</span><span>YOUR RESERVATION</span></div>
+            <h2 id="summary-title">The good<br />part starts here.</h2>
+            <p class="summary-lede">Make it a night to remember.</p>
+            <div class="summary-divider"></div>
+            <div class="suggest-box">
+              <div><strong>Find seats together</strong><span>We’ll look for a row with room for everyone.</span></div>
+              <div class="suggest-controls"><label for="group-size">Party size</label><select id="group-size" aria-label="Number of seats to suggest"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select><button id="suggest-seats" class="text-button" type="button">Find together <span aria-hidden="true">↗</span></button></div>
+            </div>
+            <div class="selection-block"><div class="selection-heading"><span>Selected seats</span><span class="count-pill" id="seat-count">0</span></div><div id="selected-list" class="selected-list"><p class="empty-selection">Choose seats from the map</p></div></div>
+            <div class="hold-block" id="hold-block" hidden>
+              <div class="hold-status"><span class="hold-icon" aria-hidden="true">◷</span><div><strong id="hold-title">Your seats are on hold</strong><span id="hold-caption">Finish before your time runs out.</span></div></div>
+              <div class="countdown" id="countdown" aria-live="off">02:00</div>
+              <div class="countdown-track"><span id="countdown-progress"></span></div>
+            </div>
+            <div class="summary-actions">
+              <button id="hold-seats" class="primary-button" type="button" disabled><span>Hold my seats</span><span aria-hidden="true">→</span></button>
+              <button id="confirm-booking" class="confirm-button" type="button" hidden>Confirm reservation <span aria-hidden="true">→</span></button>
+              <button id="release-hold" class="release-button" type="button" hidden>Release these seats</button>
+              <p class="secure-note"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 1 1 5 0v2"/></svg> Your seats are held for 2 minutes. No payment required.</p>
+            </div>
+            <div id="booking-result" class="booking-result" hidden role="status" aria-live="polite"></div>
+          </aside>
+        </section>
+
+        <footer class="page-footer"><span>Made for the moments that bring us together.</span><span id="map-version">Seat map · —</span></footer>
+        </section>
+
+        <section id="my-bookings-page" class="my-bookings-page" hidden aria-labelledby="my-bookings-title">
+          <header class="bookings-heading">
+            <div class="eyebrow"><span class="eyebrow-line"></span> YOUR PLANS</div>
+            <h1 id="my-bookings-title">Your bookings</h1>
+            <p class="intro">Every seat you’ve confirmed, all in one place.</p>
+          </header>
+          <div id="bookings-list" class="bookings-list" aria-live="polite">
+            <p class="loading-map">Loading your bookings…</p>
+          </div>
+          <button class="text-button back-to-seats" type="button" id="back-to-seats">← Browse available seats</button>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="name-dialog" class="name-dialog" aria-labelledby="name-title">
+      <form method="dialog" id="name-form">
+        <div class="dialog-mark" aria-hidden="true">✳</div>
+        <p class="section-kicker">A QUICK HELLO</p>
+        <h2 id="name-title">What should we<br />call you?</h2>
+        <p class="dialog-copy">We’ll use your name for this visit only.</p>
+        <label for="display-name">Your name</label>
+        <input id="display-name" name="displayName" maxlength="48" autocomplete="name" required placeholder="e.g. Alex Morgan" />
+        <div class="dialog-actions"><button class="text-button" type="button" id="clear-name">Clear name</button><button class="primary-button" type="submit">Let’s find seats <span aria-hidden="true">→</span></button></div>
+      </form>
+    </dialog>
+    <div id="toast-region" class="sr-only" role="status" aria-live="assertive" aria-atomic="true"></div>
+  </body>
+</html>
